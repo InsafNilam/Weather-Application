@@ -40,7 +40,11 @@ function ViewWeather() {
     <Container>
       <Primary style={{ backgroundColor: props.bgColor }}>
         <BackIcon onClick={() => navigate("/")}>
-          <img src={back} width={12} alt={"back-icon"} />
+          <img
+            src={back}
+            style={{ width: 12, cursor: "pointer" }}
+            alt={"back-icon"}
+          />
         </BackIcon>
         <div>
           <h2>
@@ -200,7 +204,7 @@ const Secondary = styled.div`
     p {
       text-align: end;
     }
-    @media (max-width: 550px) {
+    @media (max-width: 620px) {
       padding: 0 10px 0 0;
     }
   }
