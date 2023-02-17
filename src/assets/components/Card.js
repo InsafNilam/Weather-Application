@@ -71,6 +71,7 @@ function Card(props) {
               style={{
                 margin: 8,
               }}
+              alt="weather-icon"
             />
             <h5>{props.data.weather[0].description}</h5>
           </div>

@@ -1,4 +1,5 @@
-import { useQuery } from "react-query";
+import { useMemo } from "react";
+import { useQueries } from "react-query";
 import { RingLoader } from "react-spinners";
 import styled from "styled-components";
 import axios from "axios";
@@ -8,69 +9,83 @@ import cityData from "../data/cities.json";
 import loadError from "../images/load_error.png";
 
 function Dashboard() {
-  let cities = [];
-  let color = ["#388ee7", "#6249cc", "#40b681", "#de944e", "#9c3a3a"];
-
   const weatherAPI = "1610a7710663db69454a488a00ec5047";
 
-  const getWeatherDetails = async () => {
-    cityData["List"].map((weather) => cities.push(weather["CityCode"]));
+  const getWeatherDetailsById = async (id) => {
     const response = await axios.get(
-      `https://api.openweathermap.org/data/2.5/group?id=${cities.join(
-        ","
-      )}&units=metric&appid=${weatherAPI}`
+      `https://api.openweathermap.org/data/2.5/group?id=${id}&units=metric&appid=${weatherAPI}`
     );
     const data = response.data.list;
     return data;
   };
-  const {
-    isLoading,
-    isError,
-    error,
-    data: weatherData,
-  } = useQuery(["weatherData"], getWeatherDetails);
 
-  if (isLoading) {
-    return (
-      <Loader>
-        <RingLoader color="#36d7b7" loading={isLoading} />
-        <p>Please wait while we fetch the Weather Data</p>
-      </Loader>
-    );
-  } else if (isError) {
-    return (
-      <Loader>
-        <img
-          src={loadError}
-          style={{
-            width: "50%",
-            height: "fit-content",
-            filter: "drop-shadow(0 0 0.75rem crimson)",
-            objectFit: "cover",
-          }}
-        />
-        <p>{error}</p>
-      </Loader>
-    );
-  } else {
-    return (
-      <Container>
-        <InputGroup>
-          <input type="search" placeholder="Enter a City" />
-          <ButtonGroup>
-            <button>Add City</button>
-          </ButtonGroup>
-        </InputGroup>
-        <Wrap>
-          {weatherData
-            ? weatherData.map((value, i) => (
-                <Card key={i} bgColor={color[i % color.length]} data={value} />
-              ))
-            : null}
-        </Wrap>
-      </Container>
-    );
-  }
+  const queryResults = useQueries(
+    cityData["List"].map((weather, i) => {
+      return {
+        queryKey: ["weather-data", i],
+        queryFn: () => getWeatherDetailsById(weather["CityCode"]),
+        cacheTime: weather["cacheTime"],
+      };
+    })
+  );
+
+  return (
+    <Container>
+      <InputGroup>
+        <input type="search" placeholder="Enter a City" />
+        <ButtonGroup>
+          <button>Add City</button>
+        </ButtonGroup>
+      </InputGroup>
+      <Wrap>
+        {useMemo(() => {
+          const color = ["#388ee7", "#6249cc", "#40b681", "#de944e", "#9c3a3a"];
+          return !queryResults.length
+            ? null
+            : queryResults.map((result, i) => {
+                if (result.isLoading) {
+                  return (
+                    <Loader>
+                      <RingLoader color="#36d7b7" loading={result.isLoading} />
+                      <p>Please wait while we fetch the Weather Data</p>
+                    </Loader>
+                  );
+                }
+
+                if (result.isError) {
+                  return (
+                    <Loader>
+                      <img
+                        alt="error-icon"
+                        src={loadError}
+                        style={{
+                          width: "40%",
+                          height: "fit-content",
+                          filter: "drop-shadow(0 0 0.75rem crimson)",
+                          objectFit: "cover",
+                        }}
+                      />
+                      <p>{result.error.message}</p>
+                    </Loader>
+                  );
+                }
+
+                return (
+                  <>
+                    {result.data.map((value) => (
+                      <Card
+                        key={i}
+                        bgColor={color[i % color.length]}
+                        data={value}
+                      />
+                    ))}
+                  </>
+                );
+              });
+        }, [queryResults])}
+      </Wrap>
+    </Container>
+  );
 }
 
 const Container = styled.main`
@@ -87,12 +102,18 @@ const Container = styled.main`
 `;
 
 const Loader = styled.div`
-  min-height: calc(80vh);
+  max-width: 450px;
+  min-width: 400px;
+  min-height: 250px;
+  margin: 0 auto;
+  background-color: #070814;
+  border-radius: 12px;
+  outline: 3px solid #0b1c24;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: space-evenly;
   align-items: center;
-  color: white;
+  color: #a2a208;
   p {
     margin: 30px 0;
   }
@@ -105,6 +126,7 @@ const Wrap = styled.div`
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-auto-rows: max-content;
   grid-gap: 12px;
+  grid-row-gap: 20px;
 
   @media (max-width: 980px) {
     grid-template-columns: repeat(1, minmax(0, 1fr));
