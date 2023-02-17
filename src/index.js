@@ -11,7 +11,7 @@ import App from "./App";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60000, // 1 minute
+      staleTime: 37500, // 1 minute
       cacheTime: 300000, // 5 minutes
     },
   },
